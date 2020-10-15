@@ -23,11 +23,11 @@ const getUserWithEmail = email => {
       WHERE email = $1
     `,
     values: [email.toLowerCase()]
-  }
+  };
   return pool
     .query(query)
     .then(res => res.rows[0]);
-}
+};
 exports.getUserWithEmail = getUserWithEmail;
 
 /**
@@ -43,11 +43,11 @@ const getUserWithId = id => {
       WHERE id = $1
     `,
     values: [id]
-  }
+  };
   return pool
     .query(query)
     .then(res => res.rows[0]);
-}
+};
 exports.getUserWithId = getUserWithId;
 
 
@@ -63,11 +63,11 @@ const addUser = user => {
       VALUES ($1, $2, $3) RETURNING *;  
     `,
     values: [user.name, user.email, user.password]
-  }
+  };
   return pool
     .query(query)
-    .then(res => res.rows)
-}
+    .then(res => res.rows);
+};
 exports.addUser = addUser;
 
 /// Reservations
@@ -77,9 +77,27 @@ exports.addUser = addUser;
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
-}
+const getAllReservations = (guest_id, limit = 10) => {
+  const query = {
+    text: `
+      SELECT reservations.*, properties.*, AVG(rating) as average_rating
+      FROM reservations
+      JOIN properties ON reservations.property_id = properties.id
+      JOIN property_reviews ON properties.id = property_reviews.property_id
+      WHERE reservations.guest_id = $1 AND end_date < Now()::date
+      GROUP BY reservations.id, properties.id
+      ORDER BY start_date
+      LIMIT $2;  
+      `,
+    values: [guest_id, limit]
+  };
+  return pool
+    .query(query)
+    .then(res => {
+      console.log(res.rows);
+      return res.rows;
+    });
+};
 exports.getAllReservations = getAllReservations;
 
 /// Properties
@@ -95,8 +113,8 @@ const getAllProperties = function(options, limit = 10) {
   SELECT * FROM properties
   LIMIT $1
   `, [limit])
-  .then(res => res.rows);
-}
+    .then(res => res.rows);
+};
 exports.getAllProperties = getAllProperties;
 
 
@@ -110,5 +128,5 @@ const addProperty = function(property) {
   property.id = propertyId;
   properties[propertyId] = property;
   return Promise.resolve(property);
-}
+};
 exports.addProperty = addProperty;
