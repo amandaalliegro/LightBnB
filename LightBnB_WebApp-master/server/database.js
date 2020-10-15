@@ -1,6 +1,13 @@
 const properties = require('./json/properties.json');
 const users = require('./json/users.json');
 
+const { Pool } = require('pg');
+const pool = new Pool({
+  user: 'vagrant',
+  password: '123',
+  host: 'localhost',
+  database: 'lightbnb'
+});
 /// Users
 
 /**
@@ -8,17 +15,18 @@ const users = require('./json/users.json');
  * @param {String} email The email of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithEmail = function(email) {
-  let user;
-  for (const userId in users) {
-    user = users[userId];
-    if (user.email.toLowerCase() === email.toLowerCase()) {
-      break;
-    } else {
-      user = null;
-    }
+const getUserWithEmail = email => {
+  const query = {
+    text: `
+      SELECT *
+      FROM users
+      WHERE email = $1
+    `,
+    values: [email.toLowerCase()]
   }
-  return Promise.resolve(user);
+  return pool
+    .query(query)
+    .then(res => res.rows[0]);
 }
 exports.getUserWithEmail = getUserWithEmail;
 
